@@ -33,6 +33,25 @@ void main() {
       expect(config.requestHeaders['Accept'], equals('application/json'));
     });
 
+    test('strips quoted Cloud secrets before sending the API key', () {
+      const quoted = BrevoConfig(
+        apiKey: '"xkeysib-quoted-cloud-secret"',
+        senderEmail: 'test@example.com',
+        senderName: 'Test Sender',
+      );
+      // Headers still send the raw value from BrevoConfig; sanitization
+      // happens in InfrastructureConfig before the config is built.
+      expect(
+        InfrastructureConfig.sanitizeSecret(quoted.apiKey),
+        equals('xkeysib-quoted-cloud-secret'),
+      );
+      expect(
+        InfrastructureConfig.sanitizeSecret("api-key: xkeysib-from-docs\n"),
+        equals('xkeysib-from-docs'),
+      );
+      expect(InfrastructureConfig.sanitizeSecret('   '), isNull);
+    });
+
     test('handles unconfigured state gracefully', () {
       const emptyConfig = BrevoConfig(
         apiKey: null,
