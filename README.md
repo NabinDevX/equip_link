@@ -66,9 +66,26 @@ to Flutter or included in the APK.
    ```
 
    Serverpod watches for changes and launches the companion Flutter app. The
-   app's default local URL is `http://localhost:8080/`. On a physical Android
-   device, `localhost` refers to the phone itself; use the computer's reachable
-   LAN address for the local server, or use the deployed API instructions above.
+   debug app uses `http://localhost:8080/` on desktop/web and
+   `http://10.0.2.2:8080/` on an Android emulator. On a physical Android phone,
+   pass the computer's reachable LAN address as `SERVER_URL`, for example:
+
+   ```powershell
+   $googleLine = Get-Content .env | Where-Object { $_ -match '^\s*GOOGLE_SERVER_CLIENT_ID\s*=' } | Select-Object -First 1
+   $googleClientId = ($googleLine -replace '^\s*GOOGLE_SERVER_CLIENT_ID\s*=\s*', '').Trim().Trim('"').Trim("'")
+   if (-not $googleClientId) { throw 'GOOGLE_SERVER_CLIENT_ID is missing from the root .env file.' }
+
+   cd .\equip_link_flutter
+   flutter run -d <device-id> -t lib/main.dart `
+     "--dart-define=SERVER_URL=http://192.168.1.20:8080/" `
+     "--dart-define=GOOGLE_SERVER_CLIENT_ID=$googleClientId"
+   ```
+
+   Replace the example address with the computer's Wi-Fi IPv4 address and set
+   `$googleClientId` from the root `.env`. Local HTTP is permitted only in
+   Android debug builds. The app reads the public Google Web client ID from
+   `assets/config.json` for Serverpod's automatic local launch; explicit build
+   defines take precedence.
 
 To stop the local containers:
 

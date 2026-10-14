@@ -10,6 +10,7 @@ import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../../../core/widgets/trust_badge.dart';
 import '../../../client.dart';
+import '../google_sign_in_error.dart';
 import '../data/serverpod_auth_repository.dart';
 import '../student_email_validation.dart';
 
@@ -227,10 +228,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       debugPrint('Google sign-in failed: $error');
                       if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Unable to sign in with Google. Please try again.',
-                          ),
+                        SnackBar(
+                          content: Text(readableGoogleSignInError(error)),
                           backgroundColor: AppColors.error,
                         ),
                       );

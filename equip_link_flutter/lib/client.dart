@@ -1,3 +1,7 @@
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:equip_link_client/equip_link_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
@@ -31,26 +35,57 @@ final serverpodClientProvider = Provider<Client>((ref) {
 });
 
 Future<void> initializeClient() async {
-  // Priority 1: Check SERVER_URL environment variable
+  // Priority 1: an explicit build-time URL (required for a physical phone).
   final fromEnv = String.fromEnvironment('SERVER_URL');
-  final finalServerUrl = fromEnv.isNotEmpty
-      ? fromEnv
-      : await serverUrl;
+  final String finalServerUrl;
+  if (fromEnv.isNotEmpty) {
+    finalServerUrl = _normalizeServerUrl(fromEnv);
+  } else if (kDebugMode) {
+    // Android emulators reach the host computer through 10.0.2.2. A physical
+    // Android device must use the computer's LAN address via SERVER_URL.
+    finalServerUrl = defaultTargetPlatform == TargetPlatform.android
+        ? 'http://10.0.2.2:8080/'
+        : 'http://localhost:8080/';
+  } else {
+    finalServerUrl = await serverUrl;
+  }
 
   client = Client(finalServerUrl)
     ..connectivityMonitor = FlutterConnectivityMonitor()
     ..authSessionManager = FlutterAuthSessionManager();
   await client.auth.initialize();
 
-  // Android Google Sign-In requires the OAuth Web client ID to be supplied as
-  // the serverClientId. Keep it as a public build-time value; the matching
-  // client secret stays on the Serverpod server.
-  const googleServerClientId = String.fromEnvironment(
+  // Android Google Sign-In requires the public OAuth Web client ID as the
+  // serverClientId. Build defines override the checked-in app config; the
+  // matching client secret stays on the Serverpod server.
+  const buildGoogleServerClientId = String.fromEnvironment(
     'GOOGLE_SERVER_CLIENT_ID',
   );
+  final googleServerClientId = buildGoogleServerClientId.isNotEmpty
+      ? buildGoogleServerClientId
+      : await _googleServerClientIdFromAsset();
   if (googleServerClientId.isNotEmpty) {
     await client.auth.initializeGoogleSignIn(
       serverClientId: googleServerClientId,
     );
   }
+}
+
+String _normalizeServerUrl(String value) {
+  final trimmed = value.trim();
+  return trimmed.endsWith('/') ? trimmed : '$trimmed/';
+}
+
+Future<String> _googleServerClientIdFromAsset() async {
+  try {
+    final config = jsonDecode(
+      await rootBundle.loadString('assets/config.json'),
+    );
+    if (config is Map<String, dynamic>) {
+      return config['googleServerClientId'] as String? ?? '';
+    }
+  } on Object catch (error) {
+    debugPrint('Unable to read Google sign-in configuration: $error');
+  }
+  return '';
 }

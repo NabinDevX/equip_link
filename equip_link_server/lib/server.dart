@@ -38,6 +38,13 @@ void run(List<String> args) async {
 
   // Validate configuration and log masked diagnostics at startup
   InfrastructureConfig.validateAndLog(pod);
+  // Use the same resolved configuration as startup validation. In Serverpod
+  // Cloud, BREVO_API_KEY may be stored in the Serverpod password store rather
+  // than the process environment, so the email service must receive the pod
+  // when resolving its credentials.
+  BrevoTransactionalEmailService.instance = BrevoTransactionalEmailService(
+    config: InfrastructureConfig.getBrevoConfig(pod: pod),
+  );
   final googleClientSecretJson = _googleClientSecretJson(pod);
   if (googleClientSecretJson == null || googleClientSecretJson.trim().isEmpty) {
     stderr.writeln(

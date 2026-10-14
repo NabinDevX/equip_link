@@ -9,6 +9,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/custom_text_field.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../data/serverpod_auth_repository.dart';
+import '../google_sign_in_error.dart';
 import '../student_email_validation.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -333,10 +334,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       client: client,
                       onAuthenticated: _continueWithGoogle,
                       onError: (error) {
+                        debugPrint('Google sign-in failed: $error');
                         if (!mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Google sign-in failed: $error'),
+                            content: Text(readableGoogleSignInError(error)),
                             backgroundColor: AppColors.error,
                           ),
                         );
