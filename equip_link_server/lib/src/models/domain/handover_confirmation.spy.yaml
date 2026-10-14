@@ -1,0 +1,14 @@
+class: HandoverConfirmation
+table: handover_confirmation
+fields:
+  rentalRequestId: int
+  type: String
+  confirmedByOwner: bool
+  confirmedByRenter: bool
+  handoverCode: String?
+  itemConditionNotes: String?
+  confirmedAt: DateTime?
+  createdAt: DateTime
+indexes:
+  handover_confirmation_rental_idx:
+    fields: rentalRequestId

@@ -1,0 +1,50 @@
+emailIdp:
+  - login:
+  - startRegistration:
+  - verifyRegistrationCode:
+  - finishRegistration:
+  - startPasswordReset:
+  - verifyPasswordResetCode:
+  - finishPasswordReset:
+  - hasAccount:
+googleIdp:
+  - login:
+  - loginWithCode:
+  - hasAccount:
+jwtRefresh:
+  - refreshAccessToken:
+otpAuth:
+  - requestLoginCode:
+  - verifyLoginCode:
+studentEmailAuth:
+  - getStudentEligibilityStatus:
+  - prepareStudentIdCardUpload:
+  - verifyStudentIdCardUpload:
+  - requestStudentEmailVerification:
+  - verifyStudentEmail:
+equipment:
+  - getCategories:
+  - checkAvailability:
+  - createListing:
+  - updateListing:
+  - deleteListing:
+  - getListing:
+  - searchListings:
+  - getMyListings:
+profile:
+  - getMyProfile:
+  - getProfile:
+  - updateProfile:
+rental:
+  - createRentalRequest:
+  - approveRentalRequest:
+  - rejectRentalRequest:
+  - cancelRentalRequest:
+  - confirmHandover:
+  - confirmReturn:
+  - createReview:
+  - getMyRentalsAsRenter:
+  - getMyRentalsAsOwner:
+  - getRentalHistory:
+greeting:
+  - hello:

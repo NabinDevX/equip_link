@@ -1,0 +1,21 @@
+class: StudentProfile
+table: student_profile
+fields:
+  authUserId: UuidValue
+  fullName: String
+  email: String
+  university: String
+  studentIdNumber: String?
+  phoneNumber: String?
+  avatarUrl: String?
+  isVerified: bool
+  bio: String?
+  createdAt: DateTime
+  updatedAt: DateTime
+indexes:
+  student_profile_auth_user_idx:
+    fields: authUserId
+    unique: true
+  student_profile_email_idx:
+    fields: email
+    unique: true

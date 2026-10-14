@@ -1,0 +1,21 @@
+class: EmailOtpChallenge
+table: email_otp_challenge
+fields:
+  challengeId: String
+  email: String
+  codeHash: String
+  salt: String
+  issuedAt: DateTime
+  expiresAt: DateTime
+  attempts: int
+  maxAttempts: int
+  consumed: bool
+  requestIp: String?
+  userAgent: String?
+  preAuthNonce: String?
+indexes:
+  email_otp_challenge_id_idx:
+    fields: challengeId
+    unique: true
+  email_otp_email_idx:
+    fields: email

@@ -1,0 +1,6 @@
+class: AvailabilityResult
+fields:
+  listingId: int
+  isAvailable: bool
+  conflictingRentalsCount: int
+  message: String

@@ -1,0 +1,11 @@
+class: RentalStatusHistory
+table: rental_status_history
+fields:
+  rentalRequestId: int
+  status: String
+  changedBy: UuidValue
+  notes: String?
+  timestamp: DateTime
+indexes:
+  rental_status_history_rental_idx:
+    fields: rentalRequestId

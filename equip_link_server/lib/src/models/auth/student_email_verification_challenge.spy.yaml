@@ -1,0 +1,23 @@
+class: StudentEmailVerificationChallenge
+table: student_email_verification_challenge
+fields:
+  challengeId: String
+  authUserId: UuidValue
+  email: String
+  codeHash: String
+  salt: String
+  issuedAt: DateTime
+  expiresAt: DateTime
+  attempts: int
+  maxAttempts: int
+  consumed: bool
+  requestIp: String?
+  userAgent: String?
+indexes:
+  student_email_challenge_id_idx:
+    fields: challengeId
+    unique: true
+  student_email_challenge_user_idx:
+    fields: authUserId
+  student_email_challenge_email_idx:
+    fields: email

@@ -1,0 +1,25 @@
+class: RentalRequest
+table: rental_request
+fields:
+  listingId: int
+  renterId: UuidValue
+  ownerId: UuidValue
+  startDate: DateTime
+  endDate: DateTime
+  totalDays: int
+  dailyRate: double
+  totalAmount: double
+  securityDeposit: double
+  status: String
+  notes: String?
+  createdAt: DateTime
+  updatedAt: DateTime
+indexes:
+  rental_request_listing_idx:
+    fields: listingId
+  rental_request_renter_idx:
+    fields: renterId
+  rental_request_owner_idx:
+    fields: ownerId
+  rental_request_status_idx:
+    fields: status

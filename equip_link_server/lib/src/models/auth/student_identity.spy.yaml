@@ -1,0 +1,27 @@
+class: StudentIdentity
+table: student_identity
+fields:
+  authUserId: UuidValue
+  googleProviderIdentity: String?
+  studentEmail: String?
+  university: String?
+  studentIdCardPath: String?, scope=serverOnly
+  studentIdExpiresAt: DateTime?
+  studentIdCardVerified: bool, default=false
+  emailVerified: bool
+  verifiedAt: DateTime?
+  lastRevalidatedAt: DateTime?
+  revalidationDueAt: DateTime?
+  eligibilityStatus: String
+  createdAt: DateTime
+  updatedAt: DateTime
+indexes:
+  student_identity_auth_user_idx:
+    fields: authUserId
+    unique: true
+  student_identity_google_idx:
+    fields: googleProviderIdentity
+    unique: true
+  student_identity_email_idx:
+    fields: studentEmail
+    unique: true

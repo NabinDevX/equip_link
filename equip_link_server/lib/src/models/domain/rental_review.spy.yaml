@@ -1,0 +1,13 @@
+class: RentalReview
+table: rental_review
+fields:
+  rentalRequestId: int
+  reviewerId: UuidValue
+  revieweeId: UuidValue
+  listingId: int
+  rating: int
+  comment: String?
+  createdAt: DateTime
+indexes:
+  rental_review_rental_idx:
+    fields: rentalRequestId

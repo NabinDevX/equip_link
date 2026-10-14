@@ -1,0 +1,11 @@
+name: _
+publish_to: none
+
+environment:
+  sdk: '^3.12.2'
+
+workspace:
+  - equip_link_client
+  - equip_link_server
+  - equip_link_flutter
+

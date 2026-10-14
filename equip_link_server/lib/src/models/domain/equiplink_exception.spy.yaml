@@ -1,0 +1,4 @@
+exception: EquipLinkException
+fields:
+  message: String
+  statusCode: int?

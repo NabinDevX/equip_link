@@ -1,0 +1,5 @@
+class: OtpChallengeResponse
+fields:
+  challengeId: String
+  expiresInSeconds: int
+  message: String

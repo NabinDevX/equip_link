@@ -1,0 +1,4 @@
+class: StudentIdCardUpload
+fields:
+  path: String
+  uploadDescription: String

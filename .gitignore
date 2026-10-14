@@ -1,0 +1,50 @@
+# Files and directories created by pub
+.dart_tool/
+.packages
+
+# Pubspec overrides
+pubspec_overrides.yaml
+
+# Agents
+.dart_skills/
+.agents/
+.claude/
+.gemini/
+.cursor/
+.vscode/mcp.json
+.codex/
+.mcp.json
+
+# Serverpod Cloud CLI
+.scloud/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Serverpod local passwords and signing keys
+config/passwords.yaml
+equip_link_server/config/passwords.yaml
+# Flutter / Dart local build and tooling artifacts
+.dart_tool/
+.packages
+.pub-cache/
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+coverage/
+*.iml
+.idea/
+.vscode/
+
+# Serverpod local runtime and generated build artifacts
+serverpod*.log
+*.pid
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+config/passwords.yaml
+config/passwords.*.yaml

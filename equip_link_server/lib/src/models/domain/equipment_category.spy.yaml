@@ -1,0 +1,12 @@
+class: EquipmentCategory
+table: equipment_category
+fields:
+  name: String
+  slug: String
+  description: String?
+  iconName: String?
+  isActive: bool
+indexes:
+  equipment_category_slug_idx:
+    fields: slug
+    unique: true
