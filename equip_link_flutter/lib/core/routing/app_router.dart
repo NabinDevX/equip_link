@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
 
+import '../../client.dart';
 import '../widgets/bottom_nav_shell.dart';
 import '../../features/auth/presentation/onboarding_screen.dart';
 import '../../features/auth/presentation/sign_in_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
 import '../../features/auth/presentation/email_verification_screen.dart';
+import '../../features/auth/presentation/session_restore_screen.dart';
 import '../../features/auth/presentation/password_recovery_screen.dart';
 import '../../features/auth/presentation/student_identity_verification_screen.dart';
 import '../../features/marketplace/presentation/home_dashboard_screen.dart';
@@ -26,8 +29,16 @@ final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(
 
 final GoRouter appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
-  initialLocation: '/onboarding',
+  // initializeClient() restores the saved Serverpod auth session before the
+  // app is built. Resume that session instead of always showing onboarding.
+  initialLocation: client.auth.isAuthenticated
+      ? '/auth/restore-session'
+      : '/onboarding',
   routes: [
+    GoRoute(
+      path: '/auth/restore-session',
+      builder: (context, state) => const SessionRestoreScreen(),
+    ),
     GoRoute(
       path: '/onboarding',
       builder: (context, state) => const OnboardingScreen(),
