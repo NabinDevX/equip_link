@@ -19,15 +19,38 @@ final serverUrl = getServerUrl();
 /// and is set up to connect to a Serverpod running on a local server on
 /// the default port. You will need to modify this to connect to staging or
 /// production servers.
-/// In a larger app, you may want to use the dependency injection of your choice
-/// instead of using a global client object. This is just a simple example.
+///
+/// Priority for server URL:
+/// 1. SERVER_URL environment variable (highest priority)
+/// 2. config.json file in assets/
+/// 3. Default to deployed cloud server: https://nabindev.api.serverpod.space
 late final Client client;
 
-final serverpodClientProvider = Provider<Client>((ref) => client);
+final serverpodClientProvider = Provider<Client>((ref) {
+  return client;
+});
 
 Future<void> initializeClient() async {
-  client = Client(await serverUrl)
+  // Priority 1: Check SERVER_URL environment variable
+  final fromEnv = String.fromEnvironment('SERVER_URL');
+  final finalServerUrl = fromEnv.isNotEmpty
+      ? fromEnv
+      : await serverUrl;
+
+  client = Client(finalServerUrl)
     ..connectivityMonitor = FlutterConnectivityMonitor()
     ..authSessionManager = FlutterAuthSessionManager();
   await client.auth.initialize();
+
+  // Android Google Sign-In requires the OAuth Web client ID to be supplied as
+  // the serverClientId. Keep it as a public build-time value; the matching
+  // client secret stays on the Serverpod server.
+  const googleServerClientId = String.fromEnvironment(
+    'GOOGLE_SERVER_CLIENT_ID',
+  );
+  if (googleServerClientId.isNotEmpty) {
+    await client.auth.initializeGoogleSignIn(
+      serverClientId: googleServerClientId,
+    );
+  }
 }

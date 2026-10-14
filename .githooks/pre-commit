@@ -1,0 +1,57 @@
+#!/bin/sh
+set -eu
+
+repo_root="$(git rev-parse --show-toplevel)"
+echo "🔍 Running pre-commit checks..."
+
+# Get changed files
+changed_files=$(git diff --cached --name-only --diff-filter=d | grep -E '\.(dart|yaml|yml|toml)$' | grep -v '^equip_link_flutter/lib/src/generated|^equip_link_flutter/.dart_tool/')
+
+if [ -z "$changed_files" ]; then
+  echo "✅ No Dart/Config files changed, skipping analysis"
+  exit 0
+fi
+
+echo "📁 Analyzing changes in:"
+echo "$changed_files"
+echo ""
+
+# Run analysis on backend if server files changed
+if echo "$changed_files" | grep -q '^equip_link_server/'; then
+  echo "🔹 Checking backend (Serverpod)..."
+  cd "$repo_root/equip_link_server"
+  dart analyze || {
+    echo "❌ Backend analysis failed. Please fix issues before committing."
+    exit 1
+  }
+  echo "✅ Backend analysis passed"
+  echo ""
+fi
+
+# Run analysis on Flutter app if Flutter files changed
+if echo "$changed_files" | grep -q '^equip_link_flutter/'; then
+  echo "🔹 Checking Flutter app..."
+  cd "$repo_root/equip_link_flutter"
+  dart analyze || {
+    echo "❌ Flutter analysis failed. Please fix issues before committing."
+    exit 1
+  }
+  echo "✅ Flutter analysis passed"
+  echo ""
+fi
+
+# Run format check
+echo "🔹 Checking code formatting..."
+cd "$repo_root/equip_link_server"
+dart format --set-exit-if-changed . || {
+  echo "❌ Code formatting issues detected. Run 'dart format .' to fix."
+  exit 1
+}
+
+cd "$repo_root/equip_link_flutter"
+dart format --set-exit-if-changed . || {
+  echo "❌ Code formatting issues detected. Run 'dart format .' in Flutter app to fix."
+  exit 1
+}
+
+echo "✅ All pre-commit checks passed successfully!"

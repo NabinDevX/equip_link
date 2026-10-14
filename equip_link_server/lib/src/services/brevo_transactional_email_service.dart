@@ -95,11 +95,14 @@ class BrevoTransactionalEmailService {
     int? templateId,
   }) async {
     final activeConfig = config;
+    final apiKey = activeConfig.apiKey?.trim();
 
     // Missing credentials are a delivery failure, never a successful simulation.
     if (!activeConfig.isConfigured ||
-        activeConfig.apiKey!.startsWith('your_') ||
-        activeConfig.apiKey == 'test-key') {
+        apiKey == null ||
+        apiKey.isEmpty ||
+        apiKey.startsWith('your_') ||
+        apiKey == 'test-key') {
       stdout.writeln(
         '[BrevoEmailService] Brevo is not configured; email delivery was not attempted for ${maskEmail(recipientEmail)}.',
       );
@@ -168,13 +171,17 @@ class BrevoTransactionalEmailService {
           // Do not expose provider response bodies to logs or callers.
         }
 
+        final safeError = _describeProviderRejection(
+          response.statusCode,
+          errorCode,
+        );
         stderr.writeln(
-          '[BrevoEmailService] Failed to send email to ${maskEmail(recipientEmail)}. Status: ${response.statusCode}, code: $errorCode.',
+          '[BrevoEmailService] Failed to send email to ${maskEmail(recipientEmail)}. $safeError${errorCode == null ? '' : ' Provider code: $errorCode.'}',
         );
 
         return BrevoSendResult(
           success: false,
-          error: 'Transactional email provider rejected the request.',
+          error: safeError,
         );
       }
     } on TimeoutException {
@@ -193,6 +200,24 @@ class BrevoTransactionalEmailService {
         success: false,
         error: 'Unable to contact transactional email provider.',
       );
+    }
+  }
+
+  static String _describeProviderRejection(int statusCode, String? code) {
+    switch (statusCode) {
+      case HttpStatus.unauthorized:
+        return 'Brevo rejected the API key (HTTP 401). Check BREVO_API_KEY in the Serverpod runtime settings.';
+      case HttpStatus.forbidden:
+        return 'Brevo denied transactional email delivery (HTTP 403). Check the Brevo account and sending permissions.';
+      case HttpStatus.badRequest:
+        return 'Brevo rejected the email request (HTTP 400). Check that BREVO_SENDER_EMAIL is a verified Brevo sender and the request configuration is valid.';
+      case HttpStatus.tooManyRequests:
+        return 'Brevo rate limited the email request (HTTP 429). Retry after the provider limit resets.';
+      default:
+        if (statusCode >= 500) {
+          return 'Brevo is temporarily unavailable (HTTP $statusCode). Retry later.';
+        }
+        return 'Brevo rejected the email request (HTTP $statusCode).${code == null ? '' : ' Provider code: $code.'}';
     }
   }
 

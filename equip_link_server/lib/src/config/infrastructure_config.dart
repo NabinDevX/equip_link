@@ -7,7 +7,7 @@ import 'env_loader.dart';
 
 /// Database provider options for EquipLink.
 enum DatabaseProvider {
-  neon,
+  serverpodCloud,
   docker,
   embedded,
   custom,
@@ -23,7 +23,7 @@ enum RedisProvider {
 
 /// Central infrastructure and environment configuration manager for Serverpod 4.0.4.
 ///
-/// Handles environment variables, secret loading, provider switching (Neon, Upstash, Docker),
+/// Handles environment variables, secret loading, provider switching (Serverpod Cloud, Upstash, Docker),
 /// and startup validation without exposing credentials.
 class InfrastructureConfig {
   static Uri? _connectionUri(String key) {
@@ -116,8 +116,9 @@ class InfrastructureConfig {
   static DatabaseProvider resolveDatabaseProvider() {
     final raw = (getEnv('DATABASE_PROVIDER') ?? '').trim().toLowerCase();
     switch (raw) {
-      case 'neon':
-        return DatabaseProvider.neon;
+      case 'serverpod-cloud':
+      case 'cloud':
+        return DatabaseProvider.serverpodCloud;
       case 'docker':
         return DatabaseProvider.docker;
       case 'embedded':
@@ -125,18 +126,18 @@ class InfrastructureConfig {
       case 'custom':
         return DatabaseProvider.custom;
       default:
+        // Serverpod Cloud injects these values when its managed database is
+        // enabled. Prefer it over any stale DATABASE_URL from an old deploy.
+        final cloudHost = getEnv('SERVERPOD_DATABASE_HOST');
+        if (cloudHost != null && cloudHost.isNotEmpty) {
+          return DatabaseProvider.serverpodCloud;
+        }
         final connection = _connectionUri('DATABASE_URL');
         if (connection != null) {
-          if (connection.host.contains('neon.tech')) {
-            return DatabaseProvider.neon;
-          }
           return DatabaseProvider.custom;
         }
-        // If a custom DATABASE_HOST is specified, treat as custom/neon if host ends with neon.tech
-        final host =
-            getEnv('DATABASE_HOST') ?? getEnv('SERVERPOD_DATABASE_HOST');
+        final host = getEnv('DATABASE_HOST');
         if (host != null && host.isNotEmpty) {
-          if (host.contains('neon.tech')) return DatabaseProvider.neon;
           return DatabaseProvider.custom;
         }
         return DatabaseProvider.embedded;
@@ -185,8 +186,8 @@ class InfrastructureConfig {
         pod?.getPassword('BREVO_API_KEY') ??
         pod?.getPassword('BREVO_API');
 
-    final senderEmail = getEnv('BREVO_SENDER_EMAIL') ?? 'noreply@equiplink.com';
-    final senderName = getEnv('BREVO_SENDER_NAME') ?? 'EquipLink';
+    final senderEmail = getEnv('BREVO_SENDER_EMAIL')?.trim();
+    final senderName = getEnv('BREVO_SENDER_NAME')?.trim();
     final templateIdStr = getEnv('BREVO_TEMPLATE_ID');
     final templateId = templateIdStr != null
         ? int.tryParse(templateIdStr)
@@ -217,50 +218,23 @@ class InfrastructureConfig {
     // 1. Configure Database
     final databaseUrl = _connectionUri('DATABASE_URL');
     switch (dbProvider) {
-      case DatabaseProvider.neon:
-        if (databaseUrl != null) {
-          db = DatabaseConfig(
-            host: databaseUrl.host,
-            port: databaseUrl.hasPort ? databaseUrl.port : 5432,
-            name: _databaseName(databaseUrl),
-            user: _requiredUserInfo(databaseUrl, 'DATABASE_URL'),
-            password: _passwordFromUserInfo(databaseUrl, 'DATABASE_URL'),
-            requireSsl: true,
-          );
-          break;
-        }
-        final host =
-            getEnv('DATABASE_HOST') ?? getEnv('SERVERPOD_DATABASE_HOST') ?? '';
-        final port =
-            int.tryParse(
-              getEnv('DATABASE_PORT') ??
-                  getEnv('SERVERPOD_DATABASE_PORT') ??
-                  '',
-            ) ??
-            5432;
-        final name =
-            getEnv('DATABASE_NAME') ??
-            getEnv('SERVERPOD_DATABASE_NAME') ??
-            'equip_link';
-        final user =
-            getEnv('DATABASE_USER') ??
-            getEnv('SERVERPOD_DATABASE_USER') ??
-            'neondb_owner';
-        final password =
-            getEnv('DATABASE_PASSWORD') ??
-            getEnv('SERVERPOD_DATABASE_PASSWORD') ??
-            getEnv('SERVERPOD_PASSWORD_database') ??
-            db?.password ??
-            '';
-
-        if (host.isNotEmpty) {
+      case DatabaseProvider.serverpodCloud:
+        final host = getEnv('SERVERPOD_DATABASE_HOST');
+        if (host != null && host.isNotEmpty) {
           db = DatabaseConfig(
             host: host,
-            port: port,
-            name: name,
-            user: user,
-            password: password,
-            requireSsl: true, // Neon requires SSL/TLS
+            port: int.tryParse(getEnv('SERVERPOD_DATABASE_PORT') ?? '') ?? 5432,
+            name: getEnv('SERVERPOD_DATABASE_NAME') ?? 'equip_link',
+            user: getEnv('SERVERPOD_DATABASE_USER') ?? 'postgres',
+            password:
+                getEnv('SERVERPOD_PASSWORD_database') ??
+                getEnv('SERVERPOD_DATABASE_PASSWORD') ??
+                db?.password ??
+                '',
+            requireSsl:
+                (getEnv('SERVERPOD_DATABASE_REQUIRE_SSL') ?? 'true')
+                    .toLowerCase() ==
+                'true',
           );
         }
         break;
@@ -283,6 +257,7 @@ class InfrastructureConfig {
         final user = getEnv('DATABASE_USER') ?? 'postgres';
         final password =
             getEnv('DATABASE_PASSWORD') ??
+            getEnv('POSTGRES_PASSWORD') ??
             getEnv('SERVERPOD_DATABASE_PASSWORD') ??
             db?.password ??
             '';
@@ -553,23 +528,6 @@ class InfrastructureConfig {
     stdout.writeln('======================================================');
 
     // Startup validations & warnings
-    if (dbProvider == DatabaseProvider.neon) {
-      if (db == null || db.host.isEmpty) {
-        stderr.writeln(
-          '[WARN] Neon database selected but DATABASE_URL is not set!',
-        );
-      } else if (db.password.isEmpty) {
-        stderr.writeln(
-          '[WARN] Neon database connection string has no password!',
-        );
-      }
-      if (db != null && db.host.contains('-pooler')) {
-        stdout.writeln(
-          '[NOTE] Neon pooled endpoint detected. For database migrations, use the direct endpoint.',
-        );
-      }
-    }
-
     if (redisProvider == RedisProvider.upstash) {
       if (redis == null || redis.host.isEmpty) {
         stderr.writeln(
@@ -583,8 +541,10 @@ class InfrastructureConfig {
     }
 
     if (!brevo.isConfigured) {
-      stdout.writeln(
-        '[INFO] Brevo transactional email is not fully configured yet. Email authentication will use fallback.',
+      stderr.writeln(
+        '[WARN] Brevo is not configured. Email registration and password reset '
+        'cannot send verification codes until BREVO_API_KEY and '
+        'BREVO_SENDER_EMAIL are configured.',
       );
     }
   }

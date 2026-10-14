@@ -7,7 +7,7 @@ void main() {
       ['--mode', 'development'],
       configOverride: (config) {
         final db = DatabaseConfig(
-          host: 'neon.custom.host',
+          host: 'cloud-db.custom.host',
           port: 5432,
           name: 'custom_db',
           user: 'custom_user',
@@ -18,7 +18,7 @@ void main() {
       },
     );
 
-    expect(pod.config.database?.host, equals('neon.custom.host'));
+    expect(pod.config.database?.host, equals('cloud-db.custom.host'));
     expect(pod.config.database?.port, equals(5432));
     expect(pod.config.database?.name, equals('custom_db'));
     expect(pod.config.database?.user, equals('custom_user'));

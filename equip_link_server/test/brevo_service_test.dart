@@ -109,7 +109,9 @@ void main() {
       expect(result.success, isFalse);
       expect(
         result.error,
-        equals('Transactional email provider rejected the request.'),
+        equals(
+          'Brevo rejected the API key (HTTP 401). Check BREVO_API_KEY in the Serverpod runtime settings.',
+        ),
       );
     });
 

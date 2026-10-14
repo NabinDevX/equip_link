@@ -1,0 +1,38 @@
+name: Deploy Serverpod to Cloud
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.4'
+
+      - name: Install workspace dependencies
+        run: flutter pub get
+
+      - name: Install the matching Serverpod CLI
+        run: |
+          dart pub global activate serverpod_cli 4.0.4
+          echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+
+      - name: Generate Serverpod code
+        working-directory: equip_link_server
+        run: serverpod generate
+
+      - name: Deploy to Serverpod Cloud
+        uses: serverpod/serverpod_cloud_deploy@v1
+        with:
+          token: ${{ secrets.SERVERPOD_CLOUD_TOKEN }}
+          project_id: ${{ vars.SERVERPOD_CLOUD_PROJECT_ID }}
+          project_dir: ./equip_link_server
