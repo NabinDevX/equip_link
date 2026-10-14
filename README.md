@@ -66,9 +66,12 @@ to Flutter or included in the APK.
    ```
 
    Serverpod watches for changes and launches the companion Flutter app. The
-   debug app uses `http://localhost:8080/` on desktop/web and
-   `http://10.0.2.2:8080/` on an Android emulator. On a physical Android phone,
-   pass the computer's reachable LAN address as `SERVER_URL`, for example:
+   app uses `SERVER_URL` when supplied; otherwise it reads `apiUrl` from
+   `equip_link_flutter/assets/config.json`, including in debug builds. To use
+   the local server, pass its reachable URL as `SERVER_URL`: use
+   `http://10.0.2.2:8080/` on an Android emulator, `http://localhost:8080/` on
+   desktop/web, or the computer's reachable LAN address on a physical Android
+   phone. For example:
 
    ```powershell
    $googleLine = Get-Content .env | Where-Object { $_ -match '^\s*GOOGLE_SERVER_CLIENT_ID\s*=' } | Select-Object -First 1

@@ -7,9 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:serverpod_auth_idp_flutter/serverpod_auth_idp_flutter.dart';
 import 'package:serverpod_flutter/serverpod_flutter.dart';
 
-// When you are running the app on a physical device, you need to set the
-// server URL to the IP address of your computer. You can find the IP
-// address by running `ipconfig` on Windows or `ifconfig` on Mac/Linux.
+// When using the local server from a physical device, set SERVER_URL to the
+// computer's reachable LAN address. The checked-in config points to Cloud.
 //
 // You can set the variable when running or building your app like this:
 // E.g. `flutter run --dart-define=SERVER_URL=https://api.example.com/`.
@@ -20,14 +19,12 @@ final serverUrl = getServerUrl();
 
 /// Sets up a global client object that can be used to talk to the server from
 /// anywhere in our app. The client is generated from your server code
-/// and is set up to connect to a Serverpod running on a local server on
-/// the default port. You will need to modify this to connect to staging or
-/// production servers.
+/// and uses the API URL in assets/config.json unless SERVER_URL is supplied.
 ///
 /// Priority for server URL:
 /// 1. SERVER_URL environment variable (highest priority)
 /// 2. config.json file in assets/
-/// 3. Default to deployed cloud server: https://nabindev.api.serverpod.space
+/// 3. Serverpod Flutter's local fallback when no URL is configured.
 late final Client client;
 
 final serverpodClientProvider = Provider<Client>((ref) {
@@ -40,14 +37,22 @@ Future<void> initializeClient() async {
   final String finalServerUrl;
   if (fromEnv.isNotEmpty) {
     finalServerUrl = _normalizeServerUrl(fromEnv);
-  } else if (kDebugMode) {
-    // Android emulators reach the host computer through 10.0.2.2. A physical
-    // Android device must use the computer's LAN address via SERVER_URL.
-    finalServerUrl = defaultTargetPlatform == TargetPlatform.android
-        ? 'http://10.0.2.2:8080/'
-        : 'http://localhost:8080/';
   } else {
-    finalServerUrl = await serverUrl;
+    final configuredServerUrl = _normalizeServerUrl(await serverUrl);
+    final configuredHost = Uri.tryParse(configuredServerUrl)?.host;
+    if (kDebugMode &&
+        (configuredHost == 'localhost' || configuredHost == '127.0.0.1')) {
+      // Android emulators reach the host computer through 10.0.2.2.
+      // Physical devices should use the explicit SERVER_URL or configured
+      // Cloud URL instead of this emulator-only address.
+      finalServerUrl = defaultTargetPlatform == TargetPlatform.android
+          ? 'http://10.0.2.2:8080/'
+          : configuredServerUrl;
+    } else {
+      // Honor assets/config.json in debug mode too. This allows a debug APK on
+      // a physical phone to reach the configured Serverpod Cloud API.
+      finalServerUrl = configuredServerUrl;
+    }
   }
 
   client = Client(finalServerUrl)

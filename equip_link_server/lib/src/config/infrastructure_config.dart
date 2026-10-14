@@ -112,6 +112,32 @@ class InfrastructureConfig {
     return null;
   }
 
+  /// Strips Cloud/console paste artifacts from secrets (quotes, BOM, headers).
+  ///
+  /// Serverpod Cloud and `.env` values sometimes arrive wrapped in quotes or
+  /// copied with an `api-key:` prefix. Brevo then returns HTTP 401 even though
+  /// startup logs show the key as configured.
+  static String? sanitizeSecret(String? value) {
+    if (value == null) return null;
+    var sanitized = value.trim();
+    if (sanitized.startsWith('\uFEFF')) {
+      sanitized = sanitized.substring(1).trim();
+    }
+    if (sanitized.length >= 2 &&
+        ((sanitized.startsWith('"') && sanitized.endsWith('"')) ||
+            (sanitized.startsWith("'") && sanitized.endsWith("'")))) {
+      sanitized = sanitized.substring(1, sanitized.length - 1).trim();
+    }
+    const prefixes = ['api-key:', 'Api-Key:', 'Bearer '];
+    for (final prefix in prefixes) {
+      if (sanitized.toLowerCase().startsWith(prefix.toLowerCase())) {
+        sanitized = sanitized.substring(prefix.length).trim();
+        break;
+      }
+    }
+    return sanitized.isEmpty ? null : sanitized;
+  }
+
   /// Determines the active database provider.
   static DatabaseProvider resolveDatabaseProvider() {
     final raw = (getEnv('DATABASE_PROVIDER') ?? '').trim().toLowerCase();
@@ -194,9 +220,9 @@ class InfrastructureConfig {
         : null;
 
     return BrevoConfig(
-      apiKey: apiKey,
-      senderEmail: senderEmail,
-      senderName: senderName,
+      apiKey: sanitizeSecret(apiKey),
+      senderEmail: sanitizeSecret(senderEmail),
+      senderName: senderName?.trim().isEmpty == true ? null : senderName?.trim(),
       templateId: templateId,
     );
   }

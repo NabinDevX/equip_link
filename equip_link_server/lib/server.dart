@@ -208,7 +208,9 @@ String? _googleClientSecretJson(Serverpod pod) {
   // Read from the environment first so credentials never need to be stored
   // in application source files. Serverpod's password store remains a
   // supported fallback for deployments that manage secrets through it.
-  return InfrastructureConfig.getEnv('SERVERPOD_PASSWORD_googleClientSecret') ??
-      InfrastructureConfig.getEnv('GOOGLE_CLIENT_SECRET_JSON') ??
-      pod.getPassword('googleClientSecret');
+  return InfrastructureConfig.sanitizeSecret(
+    InfrastructureConfig.getEnv('SERVERPOD_PASSWORD_googleClientSecret') ??
+        InfrastructureConfig.getEnv('GOOGLE_CLIENT_SECRET_JSON') ??
+        pod.getPassword('googleClientSecret'),
+  );
 }

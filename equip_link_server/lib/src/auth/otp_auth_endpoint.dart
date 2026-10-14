@@ -105,8 +105,14 @@ class OtpAuthEndpoint extends Endpoint {
         );
 
     if (!sendResult.success) {
-      challenge.consumed = true;
-      await EmailOtpChallenge.db.updateRow(session, challenge);
+      // The pre-insert object has no database id yet. Update by the unique
+      // challenge id so provider failures remain a handled 503, not an HTTP 500.
+      await EmailOtpChallenge.db.updateWhere(
+        session,
+        columnValues: (t) => [t.consumed(true)],
+        where: (t) => t.challengeId.equals(challengeId),
+        noReturn: true,
+      );
       session.log(
         'Failed to deliver OTP to ${BrevoTransactionalEmailService.maskEmail(normalizedEmail)}.',
         level: LogLevel.error,

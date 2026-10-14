@@ -233,7 +233,10 @@ class StudentEmailAuthEndpoint extends Endpoint {
       requestIp: _requestIp(session),
       userAgent: _userAgent(session),
     );
-    await StudentEmailVerificationChallenge.db.insertRow(session, challenge);
+    final stored = await StudentEmailVerificationChallenge.db.insertRow(
+      session,
+      challenge,
+    );
 
     final result = await BrevoTransactionalEmailService.instance
         .sendStudentEmailVerificationCode(
@@ -242,16 +245,28 @@ class StudentEmailAuthEndpoint extends Endpoint {
           expiration: const Duration(minutes: 10),
         );
     if (!result.success) {
-      challenge.consumed = true;
-      await StudentEmailVerificationChallenge.db.updateRow(session, challenge);
+      // Do not depend on the auto-generated database id returned by insertRow.
+      // Some Serverpod Cloud database adapters can return an inserted row
+      // without its id; updateRow would then throw and turn the intended 503
+      // email-provider error into an unhandled HTTP 500.
+      await StudentEmailVerificationChallenge.db.updateWhere(
+        session,
+        columnValues: (t) => [t.consumed(true)],
+        where: (t) =>
+            (t.challengeId.equals(stored.challengeId)) &
+            (t.authUserId.equals(authUserId)),
+        noReturn: true,
+      );
       throw EquipLinkException(
-        message: 'Unable to send a verification code. Please try again later.',
+        message:
+            result.error ??
+            'Unable to send a verification code. Please try again later.',
         statusCode: 503,
       );
     }
 
     return StudentEmailChallengeResponse(
-      challengeId: challenge.challengeId,
+      challengeId: stored.challengeId,
       expiresInSeconds: 600,
       message: 'Verification code sent.',
     );
