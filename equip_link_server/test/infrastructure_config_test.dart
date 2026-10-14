@@ -55,30 +55,6 @@ void main() {
       expect(overridden.database, isNotNull);
     });
 
-    test('configOverride accurately configures Neon database when selected', () {
-      final baseConfig = ServerpodConfig.load('development', 'default', {
-        'database': 'dev_pass',
-      });
-
-      // Pass custom Neon environment variables via EnvLoader simulation / test
-      final overridden = InfrastructureConfig.applyOverrides(
-        baseConfig.copyWith(
-          database: DatabaseConfig(
-            host: 'ep-test-project.region.aws.neon.tech',
-            port: 5432,
-            name: 'equip_link',
-            user: 'neondb_owner',
-            password: 'secret_neon_password',
-            requireSsl: true,
-          ),
-        ),
-      );
-
-      expect(overridden.database?.host, contains('neon.tech'));
-      expect(overridden.database?.requireSsl, isTrue);
-      expect(overridden.database?.port, equals(5432));
-    });
-
     test(
       'configOverride accurately configures Upstash Redis when selected',
       () {

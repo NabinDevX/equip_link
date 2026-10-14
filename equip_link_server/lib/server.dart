@@ -15,7 +15,16 @@ import 'src/web/routes/app_config_route.dart';
 Future<void> _sendBrevoEmailOrThrow(Future<BrevoSendResult> send) async {
   final result = await send;
   if (!result.success) {
-    throw StateError('Transactional email delivery failed.');
+    // A plain StateError is treated by Serverpod as an unhandled exception
+    // and returned as HTTP 500. This modeled exception is serialized for the
+    // client and contains only the provider's safe, credential-free message.
+    throw EquipLinkException(
+      message:
+          result.error ??
+          'Unable to send a verification email. '
+              'Check the server email configuration and try again.',
+      statusCode: 503,
+    );
   }
 }
 
@@ -29,6 +38,13 @@ void run(List<String> args) async {
 
   // Validate configuration and log masked diagnostics at startup
   InfrastructureConfig.validateAndLog(pod);
+  final googleClientSecretJson = _googleClientSecretJson(pod);
+  if (googleClientSecretJson == null || googleClientSecretJson.trim().isEmpty) {
+    stderr.writeln(
+      '[WARN] Google sign-in is disabled. Configure GOOGLE_CLIENT_SECRET_JSON '
+      'or the Serverpod password googleClientSecret in the deployed server.',
+    );
+  }
 
   // Initialize authentication services for the server.
   // Token managers will be used to validate and issue authentication keys,
@@ -78,10 +94,11 @@ void run(List<String> args) async {
               );
             },
       ),
-      if (_googleClientSecretJson(pod) != null)
+      if (googleClientSecretJson != null &&
+          googleClientSecretJson.trim().isNotEmpty)
         GoogleIdpConfig(
           clientSecret: GoogleClientSecret.fromJsonString(
-            _googleClientSecretJson(pod)!,
+            googleClientSecretJson,
           ),
           onAfterGoogleAccountCreated:
               (session, authUser, googleAccount, {transaction}) async {

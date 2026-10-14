@@ -1,3 +1,4 @@
+// Top-level void functions can use dart:io, otherwise avoid flutter/foundation.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -222,7 +223,8 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     onAuthenticated: () async {
                       await _continueAfterAuthentication();
                     },
-                    onError: (_) {
+                    onError: (error) {
+                      debugPrint('Google sign-in failed: $error');
                       if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(

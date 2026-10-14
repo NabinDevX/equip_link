@@ -83,6 +83,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     if (message.isEmpty) {
       return 'Unable to start registration. Check your connection and try again.';
     }
+    final normalizedMessage = message.toLowerCase();
+    if (normalizedMessage.contains('failed host lookup') ||
+        normalizedMessage.contains('socketexception')) {
+      return 'EquipLink could not resolve the server address. Check that this '
+          'phone has internet access, then set Android Private DNS to '
+          'Automatic and try again.';
+    }
     return 'Unable to start registration: $message';
   }
 

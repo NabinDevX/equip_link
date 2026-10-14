@@ -41,7 +41,7 @@ class BrevoConfig {
 
   /// Headers required for Brevo API requests.
   Map<String, String> get requestHeaders => {
-    'api-key': apiKey ?? '',
+    'api-key': apiKey?.trim() ?? '',
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   };
